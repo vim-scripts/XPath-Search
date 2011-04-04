@@ -29,14 +29,14 @@ endif
 
 "Used to track the results buffer
 let s:results_buffer_name = 'xpath_search_results'
-let s:result_pattern = '^┃\(\d\+\).*$'
+let s:result_pattern = '^|\(\d\+\).*$'
 
 autocmd FileType * :call XPathFileType(expand("<amatch>"))
 
 function! XPathFileType(bufft)
 	for ft in g:xpath_search_filetypes
 		if (a:bufft == ft)
-			nnoremap <buffer> <unique> X :call XPathSearchPrompt()<cr>
+			nnoremap <buffer> X :call XPathSearchPrompt()<cr>
 		end
 	endfor
 endfunction

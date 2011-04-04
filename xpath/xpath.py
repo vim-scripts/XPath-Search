@@ -50,10 +50,11 @@ class VimXPathInterface(object):
 		return results
 
 	def prep_searcher(self, search_buffer_name):
-		search_buffer = self.buffer_manager.get_buffer(search_buffer_name)
+		if search_buffer_name != self.buffer_manager.get_defined_buffer('results'):
+			search_buffer = self.buffer_manager.get_buffer(search_buffer_name)
 
-		search_text = self.buffer_manager.get_buffer_content(search_buffer)
-		self.searcher.build_tree(search_text)
+			search_text = self.buffer_manager.get_buffer_content(search_buffer)
+			self.searcher.build_tree(search_text)
 
 	def output_results(self, xpath, results):
 		results_buffer = self.buffer_manager.get_defined_buffer('results')
@@ -125,7 +126,7 @@ class XPathSearcher(object):
 				self.cache['eval'] = etree.XPathEvaluator(self.cache['tree'])
 				self.cache['error'] = None
 
-			except etree.XMLSyntaxError as xmlerr:
+			except Exception as xmlerr:
 				err_text = str(xmlerr)
 				self.cache['error'] = XPathParseErrorResult(err_text)
 
@@ -135,7 +136,7 @@ class XPathSearcher(object):
 				raw_results = self.cache['eval'](xpath)
 				results = self.parse_results(raw_results)
 
-			except etree.XPathError as xpatherr:
+			except Exception as xpatherr:
 				err_text = str(xpatherr)
 				results = [XPathSearchErrorResult(err_text, xpath)]
 		else:
@@ -193,6 +194,18 @@ class XPathSearcher(object):
 
 		return result
 
+class TBL(object):
+#	TL = '┏'; TC = '┳'; TR = '┓'; T = '━'
+#	HL = '┣'; HC = '╋'; HR = '┫'; H = '━'
+#	ML = '┃'; MC = '┃'; MR = '┃'; M = '━'
+#	BL = '┗'; BC = '┻'; BR = '┛'; B = '━'
+
+	TL = '+'; TC = '+'; TR = '+'; T = '-'
+	HL = '+'; HC = '+'; HR = '+'; H = '-'
+	ML = '|'; MC = '|'; MR = '|'; M = '-'
+	BL = '+'; BC = '+'; BR = '+'; B = '-'
+
+
 class ResultsFormatter(object):
 
 	def __init__(self, window_width, xpath, results):
@@ -238,26 +251,28 @@ class ResultsFormatter(object):
 		lines += self.build_body()
 		lines += self.build_footer()
 
+		lines = [x.replace("\n", " ") for x in lines]
+
 		return lines
 
 	def build_header(self):
 		header_lines = []
 		
-		header_lines.append('┏' + '━'* (self.width-2) + '┓')
+		header_lines.append(TBL.TL + TBL.T* (self.width-2) + TBL.TR)
 
 		header_text = 'Results: ' + self.xpath_string
-		header_lines.append('┃' + header_text + ' ' * (self.width - len(header_text) - 2) + '┃')
+		header_lines.append(TBL.ML + header_text + ' ' * (self.width - len(header_text) - 2) + TBL.MR)
 
-		lines = ['┣', '┃', '┣']
+		lines = [TBL.HL, TBL.ML, TBL.HL]
 		for c in self.table.columns:
-			lines[0] += '━' * c.width + '┳'
-			lines[1] += c.title + ' '*(c.width - len(c.title)) + '┃'
-			lines[2] += '━' * c.width + '╋'
+			lines[0] += TBL.T * c.width + TBL.TC
+			lines[1] += c.title + ' '*(c.width - len(c.title)) + TBL.MC
+			lines[2] += TBL.H * c.width + TBL.HC
 
-		lines[0] = lines[0][:-len('┳')] + '┫'
-		lines[2] = lines[2][:-len('┃')] + '┫'
+		lines[0] = lines[0][:-len(TBL.TC)] + TBL.HR
+		lines[2] = lines[2][:-len(TBL.HC)] + TBL.HR
 
-		header_lines.append(lines)
+		header_lines += lines
 
 		return header_lines
 
@@ -265,7 +280,7 @@ class ResultsFormatter(object):
 		body_lines = []
 
 		for r in self.table.rows:
-			line = '┃'
+			line = TBL.ML
 			for c in self.table.columns:
 				contents = r.cells.get(c, '')
 				if len(contents) > c.width:
@@ -273,7 +288,7 @@ class ResultsFormatter(object):
 				else:
 					contents += ' '*(c.width - len(contents))
 
-				line += contents + '┃'
+				line += contents + TBL.MC
 
 			body_lines.append(line)
 
@@ -281,11 +296,11 @@ class ResultsFormatter(object):
 
 	def build_footer(self):
 		footer_lines = []
-		line = '┗'
+		line = TBL.BL
 		for c in self.table.columns:
-			line += '━' * c.width + '┻'
+			line += TBL.B * c.width + TBL.BC
 
-		line = line[:-len('┻')] + '┛'
+		line = line[:-len(TBL.BC)] + TBL.BR
 
 		footer_lines.append(line)
 		return footer_lines
@@ -420,8 +435,8 @@ class XPathParseErrorResult(XPathErrorResult):
 class XPathSearchErrorResult(XPathErrorResult):
 	def __init__(self, error, xpath):
 		self.error = 'Error with XPath (' + xpath + '): ' + error
-		self.line = '-'
-		self.column = '-'
+		self.line = '*'
+		self.column = '*'
 
 class XPathNoResultsResult(XPathResult):
 	def __init__(self):
