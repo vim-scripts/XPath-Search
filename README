@@ -1,10 +1,6 @@
 This is a mirror of http://www.vim.org/scripts/script.php?script_id=3537
 
 -Defines a new command, :XPathSearchPrompt that begins XPath search mode.
--Start typing your XPath with the aid of context-sensitive tab completion, then hit enter to see the results pop up in a new window. 
--Jump to the line of a result by hitting enter in the results window
--Also displays XML validation errors in the results window, and allows you to jump to the problematic line easily.
-
-For more information and a demo video visit http://www.actionshrimp.com/2011/04/vim-xpath-plugin/
+-Start typing your XPath and see the results pop up in vim's location list as you type
 
 Also see github: https://github.com/actionshrimp/vim-xpath
